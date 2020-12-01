@@ -138,7 +138,7 @@ namespace Main {
 			return 0;
 		};
 
-		sprintf(buf, "if not exist %s.static.lib move /Y %s.lib %s.static.lib", mainLib, mainLib, mainLib, mainLib);
+		sprintf(buf, "if not exist %s.static.lib move /Y %s.lib %s.static.lib", mainLib, mainLib, mainLib);
 		if(cmdSystem(buf)) {
 			return 1;
 		}
