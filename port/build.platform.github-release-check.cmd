@@ -5,7 +5,7 @@ rem Created by Grigore Stefan <g_stefan@yahoo.com>
 
 SETLOCAL ENABLEDELAYEDEXPANSION
 
-echo -^> git-release-check lib-to-dll
+echo -^> github-release-check lib-to-dll
 
 set PROJECT=lib-to-dll
 if not exist source\%PROJECT%.version.ini echo Error - no version & exit 1
