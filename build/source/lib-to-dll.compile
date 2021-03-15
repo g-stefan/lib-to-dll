@@ -1,3 +1,3 @@
 --exe lib-to-dll
---use-path=source
 --use-project=xyo.static
+--output-bin-path-is-output
