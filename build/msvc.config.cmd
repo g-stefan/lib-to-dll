@@ -3,6 +3,4 @@ rem Public domain
 rem http://unlicense.org/
 rem Created by Grigore Stefan <g_stefan@yahoo.com>
 
-echo -^> clean-release lib-to-dll
-
-if exist release\ rmdir /Q /S release
+set BUILD_PROJECT=lib-to-dll
