@@ -10,10 +10,10 @@
 #ifndef LIB_TO_DLL_VERSION_HPP
 #define LIB_TO_DLL_VERSION_HPP
 
-#define LIB_TO_DLL_VERSION_ABCD                1,8,0,20
-#define LIB_TO_DLL_VERSION_STR                 "1.8.0"
-#define LIB_TO_DLL_VERSION_STR_BUILD           "20"
-#define LIB_TO_DLL_VERSION_STR_DATETIME        "2021-11-22 13:35:05"
+#define LIB_TO_DLL_VERSION_ABCD                1,9,0,21
+#define LIB_TO_DLL_VERSION_STR                 "1.9.0"
+#define LIB_TO_DLL_VERSION_STR_BUILD           "21"
+#define LIB_TO_DLL_VERSION_STR_DATETIME        "2022-01-01 21:19:47"
 
 #ifndef XYO_RC
 
