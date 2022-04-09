@@ -10,11 +10,11 @@
 #ifndef LIB_TO_DLL_COPYRIGHT_HPP
 #define LIB_TO_DLL_COPYRIGHT_HPP
 
-#define LIB_TO_DLL_COPYRIGHT            "Copyright (c) Grigore Stefan"
-#define LIB_TO_DLL_PUBLISHER            "Grigore Stefan"
-#define LIB_TO_DLL_COMPANY              LIB_TO_DLL_PUBLISHER
-#define LIB_TO_DLL_CONTACT              "g_stefan@yahoo.com"
-#define LIB_TO_DLL_FULL_COPYRIGHT       LIB_TO_DLL_COPYRIGHT " <" LIB_TO_DLL_CONTACT ">"
+#define LIB_TO_DLL_COPYRIGHT "Copyright (c) Grigore Stefan"
+#define LIB_TO_DLL_PUBLISHER "Grigore Stefan"
+#define LIB_TO_DLL_COMPANY LIB_TO_DLL_PUBLISHER
+#define LIB_TO_DLL_CONTACT "g_stefan@yahoo.com"
+#define LIB_TO_DLL_FULL_COPYRIGHT LIB_TO_DLL_COPYRIGHT " <" LIB_TO_DLL_CONTACT ">"
 
 #ifndef XYO_RC
 

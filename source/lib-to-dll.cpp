@@ -19,18 +19,18 @@ namespace Main {
 
 	using namespace XYO;
 
-	class Application :
-		public virtual IMain {
+	class Application : public virtual IMain {
 			XYO_DISALLOW_COPY_ASSIGN_MOVE(Application);
-		protected:
 
+		protected:
 			void showUsage();
 			void showLicense();
 
 			String strStrip(String str);
 			int cmdSystem(char *cmd);
+
 		public:
-			inline Application() {};
+			inline Application(){};
 
 			int main(int cmdN, char *cmdS[]);
 
@@ -46,14 +46,13 @@ namespace Main {
 		printf("version %s build %s [%s]\n", LibToDll::Version::version(), LibToDll::Version::build(), LibToDll::Version::datetime());
 		printf("%s\n\n", LibToDll::Copyright::fullCopyright());
 		printf("%s\n",
-			"usage:\n"
-			"    lib-to-dll in.lib [extra obj/lib]\n\n"
-			"options:\n"
-			"    --mode type     {WIN32|WIN64}\n"
-			"    --license       show license\n"
-			"    --use-coff-def  use symbols form obj not from def file\n"
-			"    --static-crt    use static crt [MT] default is dynamic crt [MD]\n"
-		);
+		       "usage:\n"
+		       "    lib-to-dll in.lib [extra obj/lib]\n\n"
+		       "options:\n"
+		       "    --mode type     {WIN32|WIN64}\n"
+		       "    --license       show license\n"
+		       "    --use-coff-def  use symbols form obj not from def file\n"
+		       "    --static-crt    use static crt [MT] default is dynamic crt [MD]\n");
 	};
 
 	void Application::showLicense() {
@@ -86,7 +85,7 @@ namespace Main {
 		int useCoffDef;
 		int useStaticCrt;
 
-		if(cmdN < 2) {
+		if (cmdN < 2) {
 			showUsage();
 			return 0;
 		};
@@ -96,21 +95,21 @@ namespace Main {
 		coffMode = 0;
 		mainLib = NULL;
 		libList.empty();
-		for(i = 1; i < cmdN; ++i) {
-			if(strncmp(cmdS[i], "--", 2) == 0) {
+		for (i = 1; i < cmdN; ++i) {
+			if (strncmp(cmdS[i], "--", 2) == 0) {
 				opt = &cmdS[i][2];
-				if(strcmp(opt, "license") == 0) {
+				if (strcmp(opt, "license") == 0) {
 					showLicense();
-				} else if(strcmp(opt, "use-coff-def") == 0) {
+				} else if (strcmp(opt, "use-coff-def") == 0) {
 					useCoffDef = 1;
-				} else if(strcmp(opt, "static-crt") == 0) {
+				} else if (strcmp(opt, "static-crt") == 0) {
 					useStaticCrt = 1;
-				} else if(strcmp(opt, "mode") == 0) {
-					if(i + 1 < cmdN) {
-						if(strcmp(cmdS[i + 1], "WIN32") == 0) {
+				} else if (strcmp(opt, "mode") == 0) {
+					if (i + 1 < cmdN) {
+						if (strcmp(cmdS[i + 1], "WIN32") == 0) {
 							coffMode = 0;
 						};
-						if(strcmp(cmdS[i + 1], "WIN64") == 0) {
+						if (strcmp(cmdS[i + 1], "WIN64") == 0) {
 							coffMode = 1;
 						};
 						++i;
@@ -118,7 +117,7 @@ namespace Main {
 					continue;
 				};
 			} else {
-				if(mainLib) {
+				if (mainLib) {
 					libList.pushToTail(cmdS[i]);
 				} else {
 					mainLib = cmdS[i];
@@ -126,10 +125,10 @@ namespace Main {
 			};
 		};
 
-		if(mainLib) {
+		if (mainLib) {
 			size_t last;
 			mainLibX = (char *)mainLib;
-			if(String::indexOfFromEnd(mainLibX, ".", 0, last)) {
+			if (String::indexOfFromEnd(mainLibX, ".", 0, last)) {
 				mainLibX = String::substring(mainLibX, 0, last);
 				mainLib = (char *)mainLibX.value();
 			};
@@ -139,21 +138,21 @@ namespace Main {
 		};
 
 		sprintf(buf, "if not exist %s.static.lib move /Y %s.lib %s.static.lib", mainLib, mainLib, mainLib);
-		if(cmdSystem(buf)) {
+		if (cmdSystem(buf)) {
 			return 1;
 		}
 		sprintf(buf, "lib /nologo /list %s.static.lib >%s.lst", mainLib, mainLib);
-		if(cmdSystem(buf)) {
+		if (cmdSystem(buf)) {
 			return 1;
 		}
 
 		objList.empty();
 		sprintf(buf, "%s.lst", mainLib);
 		in = fopen(buf, "rt");
-		if(in != NULL) {
-			while(fgets(buf, 1024, in)) {
+		if (in != NULL) {
+			while (fgets(buf, 1024, in)) {
 				line = strStrip((char *)&buf[0]);
-				if(line.length() == 0) {
+				if (line.length() == 0) {
 					continue;
 				};
 				objList.pushToTail(line);
@@ -162,14 +161,14 @@ namespace Main {
 		};
 
 		sprintf(buf, "if exist %s.obj\\NUL rmdir /S /Q %s.obj", mainLib, mainLib);
-		if(cmdSystem(buf)) {
+		if (cmdSystem(buf)) {
 			return 1;
 		}
 		sprintf(buf, "if not exist %s.obj\\NUL mkdir %s.obj", mainLib, mainLib);
-		if(cmdSystem(buf)) {
+		if (cmdSystem(buf)) {
 			return 1;
 		}
-		for(objFile = objList.head; objFile; objFile = objFile->next) {
+		for (objFile = objList.head; objFile; objFile = objFile->next) {
 			objAs = objFile->value;
 			objX = objFile->value;
 			objAs = String::replace(objAs, ".\\", "");
@@ -177,23 +176,22 @@ namespace Main {
 			objAs = String::replace(objAs, "\\", "_");
 			objAs = String::replace(objAs, "/", "_");
 			objAs = String::replace(objAs, ":", "_");
-			if(coffMode) {
+			if (coffMode) {
 				sprintf(buf, "lib /nologo /MACHINE:X64 /extract:%s /out:%s.obj\\%s %s.static.lib", objX.value(), mainLib, objAs.value(), mainLib);
 			} else {
 				sprintf(buf, "lib /nologo /MACHINE:X86 /extract:%s /out:%s.obj\\%s %s.static.lib", objX.value(), mainLib, objAs.value(), mainLib);
 			};
-			if(cmdSystem(buf)) {
+			if (cmdSystem(buf)) {
 				return 1;
 			}
 		};
 
-
 		hasDef = 0;
-		if(useCoffDef) {
+		if (useCoffDef) {
 		} else {
 			sprintf(buf, "%s.def", mainLib);
 			in = fopen(buf, "rt");
-			if(in) {
+			if (in) {
 				fclose(in);
 				hasDef = 1;
 			} else {
@@ -201,16 +199,16 @@ namespace Main {
 			};
 		};
 
-		if(useCoffDef) {
+		if (useCoffDef) {
 
 			line = "xyo-coff-to-def --out ";
 			line << (char *)mainLib;
-			if(coffMode) {
+			if (coffMode) {
 				line << ".dll.def --mode WIN64 ";
 			} else {
 				line << ".dll.def --mode WIN32 ";
 			};
-			for(objFile = objList.head; objFile; objFile = objFile->next) {
+			for (objFile = objList.head; objFile; objFile = objFile->next) {
 				objAs = objFile->value;
 				objAs = String::replace(objAs, ".\\", "");
 				objAs = String::replace(objAs, "_", "__");
@@ -222,7 +220,7 @@ namespace Main {
 				line += objAs;
 				line += " ";
 			};
-			if(cmdSystem((char *)line.value())) {
+			if (cmdSystem((char *)line.value())) {
 				return 1;
 			}
 		};
@@ -230,21 +228,20 @@ namespace Main {
 		line = "link /NOLOGO /OUT:";
 		line << mainLib;
 		line << ".dll ";
-		if(coffMode) {
+		if (coffMode) {
 			line << "/MACHINE:X64 ";
 		} else {
 			line << "/MACHINE:X86 ";
 		};
-		if(useStaticCrt) {
+		if (useStaticCrt) {
 			line << "/nodefaultlib:msvcrt /defaultlib:libcmt ";
 		} else {
 			line << "/nodefaultlib:libcmt /defaultlib:msvcrt ";
 		};
 
-
 		line << "/dll /INCREMENTAL:NO /DEF:";
 		line << mainLib;
-		if(hasDef) {
+		if (hasDef) {
 			line << ".def /implib:";
 		} else {
 			line << ".dll.def /implib:";
@@ -252,7 +249,7 @@ namespace Main {
 		line << mainLib;
 		line << ".lib ";
 
-		for(objFile = objList.head; objFile; objFile = objFile->next) {
+		for (objFile = objList.head; objFile; objFile = objFile->next) {
 			objAs = objFile->value;
 			objAs = String::replace(objAs, ".\\", "");
 			objAs = String::replace(objAs, "_", "__");
@@ -265,33 +262,32 @@ namespace Main {
 			line << " ";
 		};
 
-		for(objFile = libList.head; objFile; objFile = objFile->next) {
+		for (objFile = libList.head; objFile; objFile = objFile->next) {
 			objAs = objFile->value;
 			line << objAs;
 			line << " ";
 		};
 
-
-		if(cmdSystem((char *)line.value())) {
+		if (cmdSystem((char *)line.value())) {
 			return 1;
 		}
 
 		sprintf(buf, "if exist %s.obj\\NUL rmdir /S /Q %s.obj", mainLib, mainLib);
-		if(cmdSystem(buf)) {
+		if (cmdSystem(buf)) {
 			return 1;
 		}
 		sprintf(buf, "if exist %s.lst del /F /Q %s.lst", mainLib, mainLib);
-		if(cmdSystem(buf)) {
+		if (cmdSystem(buf)) {
 			return 1;
 		}
 		sprintf(buf, "if exist %s.exp del /F /Q %s.exp", mainLib, mainLib);
-		if(cmdSystem(buf)) {
+		if (cmdSystem(buf)) {
 			return 1;
 		}
-		if(hasDef) {
+		if (hasDef) {
 		} else {
 			sprintf(buf, "if exist %s.dll.def del /F /Q %s.dll.def", mainLib, mainLib);
-			if(cmdSystem(buf)) {
+			if (cmdSystem(buf)) {
 				return 1;
 			}
 		};

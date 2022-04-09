@@ -10,10 +10,10 @@
 #ifndef LIB_TO_DLL_VERSION_HPP
 #define LIB_TO_DLL_VERSION_HPP
 
-#define LIB_TO_DLL_VERSION_ABCD                1,10,0,24
-#define LIB_TO_DLL_VERSION_STR                 "1.10.0"
-#define LIB_TO_DLL_VERSION_STR_BUILD           "24"
-#define LIB_TO_DLL_VERSION_STR_DATETIME        "2022-01-09 01:13:16"
+#define LIB_TO_DLL_VERSION_ABCD 1,11,0,26
+#define LIB_TO_DLL_VERSION_STR "1.11.0"
+#define LIB_TO_DLL_VERSION_STR_BUILD "26"
+#define LIB_TO_DLL_VERSION_STR_DATETIME "2022-04-04 01:45:00"
 
 #ifndef XYO_RC
 
@@ -28,4 +28,3 @@ namespace LibToDll {
 
 #endif
 #endif
-
