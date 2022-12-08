@@ -1,45 +1,42 @@
-//
 // Lib To Dll
-//
-// Copyright (c) 2020-2022 Grigore Stefan <g_stefan@yahoo.com>
-// Created by Grigore Stefan <g_stefan@yahoo.com>
-//
+// Copyright (c) 2022 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-//
+// SPDX-FileCopyrightText: 2022 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-License-Identifier: MIT
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "xyo.hpp"
-#include "lib-to-dll-version.hpp"
-#include "lib-to-dll-license.hpp"
-#include "lib-to-dll-copyright.hpp"
+#ifndef SECURITY_WIN32
+#	define SECURITY_WIN32
+#endif
 
-namespace Main {
+#include <windows.h>
+#include <objbase.h>
+#include <iads.h>
+#include <adshlp.h>
+#include <wininet.h>
+#include <Iptypes.h>
+#include <Iphlpapi.h>
+#include <Security.h>
+#include <ole2.h>
+#include <shlobj.h>
+#include <Shobjidl.h>
+#include <docobj.h>
+#include <mshtml.h>
+#include <MsHtmHst.h>
+#include <exdisp.h>
+#include <exdispid.h>
+#include <servprov.h>
 
-	using namespace XYO;
+#include <XYO/WinInject.hpp>
+#include <XYO/LibToDll/Application.hpp>
+#include <XYO/LibToDll/Copyright.hpp>
+#include <XYO/LibToDll/License.hpp>
+#include <XYO/LibToDll/Version.hpp>
 
-	class Application : public virtual IMain {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(Application);
-
-		protected:
-			void showUsage();
-			void showLicense();
-
-			String strStrip(String str);
-			int cmdSystem(char *cmd);
-
-		public:
-			inline Application(){};
-
-			int main(int cmdN, char *cmdS[]);
-
-			inline void initMemory();
-	};
-
-	String Application::strStrip(String str) {
-		return String::trimWithElement(str, "\r\n\t ");
-	};
+namespace XYO::LibToDll {
 
 	void Application::showUsage() {
 		printf("lib-to-dll - Convert lib to dll\n");
@@ -55,8 +52,22 @@ namespace Main {
 		       "    --static-crt    use static crt [MT] default is dynamic crt [MD]\n");
 	};
 
-	void Application::showLicense() {
-		printf("%s", LibToDll::License::content());
+	void Application::showLicense() {		
+		printf("%s%s", LibToDll::License::licenseHeader(), LibToDll::License::licenseBody());		
+	};
+
+	void Application::showVersion() {
+		printf("version %s build %s [%s]\n", LibToDll::Version::version(), LibToDll::Version::build(), LibToDll::Version::datetime());
+	};
+
+	void Application::initMemory() {
+		String::initMemory();
+		TDynamicArray<String>::initMemory();
+		TDoubleEndedQueue<String>::initMemory();
+	};
+
+	String Application::strStrip(String str) {
+		return String::trimWithElement(str, "\r\n\t ");
 	};
 
 	int Application::cmdSystem(char *cmd) {
@@ -295,12 +306,8 @@ namespace Main {
 		printf("Build %s.dll ok\n", mainLib);
 		return 0;
 	};
-
-	void Application::initMemory() {
-		String::initMemory();
-		TDoubleEndedQueue<String>::initMemory();
-	};
-
 };
 
-XYO_APPLICATION_MAIN_STD(Main::Application);
+#ifndef XYO_LIBTODLL_LIBRARY
+XYO_APPLICATION_MAIN(XYO::LibToDll::Application);
+#endif
