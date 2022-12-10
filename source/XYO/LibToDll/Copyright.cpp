@@ -13,7 +13,6 @@ namespace XYO::LibToDll::Copyright {
 	static const char *publisher_ = XYO_LIBTODLL_PUBLISHER;
 	static const char *company_ = XYO_LIBTODLL_COMPANY;
 	static const char *contact_ = XYO_LIBTODLL_CONTACT;
-	static const char *fullCopyright_ = XYO_LIBTODLL_FULL_COPYRIGHT;
 
 	const char *copyright() {
 		return copyright_;
@@ -29,10 +28,6 @@ namespace XYO::LibToDll::Copyright {
 
 	const char *contact() {
 		return contact_;
-	};
-
-	const char *fullCopyright() {
-		return fullCopyright_;
 	};
 
 };

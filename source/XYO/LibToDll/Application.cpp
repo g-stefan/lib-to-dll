@@ -41,7 +41,7 @@ namespace XYO::LibToDll {
 	void Application::showUsage() {
 		printf("lib-to-dll - Convert lib to dll\n");
 		printf("version %s build %s [%s]\n", LibToDll::Version::version(), LibToDll::Version::build(), LibToDll::Version::datetime());
-		printf("%s\n\n", LibToDll::Copyright::fullCopyright());
+		printf("%s\n\n", LibToDll::Copyright::copyright());
 		printf("%s\n",
 		       "usage:\n"
 		       "    lib-to-dll in.lib [extra obj/lib]\n\n"
@@ -52,8 +52,8 @@ namespace XYO::LibToDll {
 		       "    --static-crt    use static crt [MT] default is dynamic crt [MD]\n");
 	};
 
-	void Application::showLicense() {		
-		printf("%s%s", LibToDll::License::licenseHeader(), LibToDll::License::licenseBody());		
+	void Application::showLicense() {
+		printf("%s", LibToDll::License::license());
 	};
 
 	void Application::showVersion() {
