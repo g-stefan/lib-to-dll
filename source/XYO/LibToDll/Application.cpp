@@ -8,29 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef SECURITY_WIN32
-#	define SECURITY_WIN32
-#endif
-
-#include <windows.h>
-#include <objbase.h>
-#include <iads.h>
-#include <adshlp.h>
-#include <wininet.h>
-#include <Iptypes.h>
-#include <Iphlpapi.h>
-#include <Security.h>
-#include <ole2.h>
-#include <shlobj.h>
-#include <Shobjidl.h>
-#include <docobj.h>
-#include <mshtml.h>
-#include <MsHtmHst.h>
-#include <exdisp.h>
-#include <exdispid.h>
-#include <servprov.h>
-
-#include <XYO/WinInject.hpp>
 #include <XYO/LibToDll/Application.hpp>
 #include <XYO/LibToDll/Copyright.hpp>
 #include <XYO/LibToDll/License.hpp>
