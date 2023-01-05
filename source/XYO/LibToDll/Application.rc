@@ -11,3 +11,4 @@
 1  ICON "Application.ico"
 
 XYO_APPLICATION_VERSION_INFO(XYO_LIBTODLL,"lib-to-dll.exe","Convert lib to dll")
+XYO_APPLICATION_MANIFEST("Application.manifest")
