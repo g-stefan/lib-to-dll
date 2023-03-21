@@ -18,7 +18,7 @@ namespace XYO::LibToDll {
 	void Application::showUsage() {
 		printf("lib-to-dll - Convert lib to dll\n");
 		printf("version %s build %s [%s]\n", LibToDll::Version::version(), LibToDll::Version::build(), LibToDll::Version::datetime());
-		printf("%s\n\n", LibToDll::Copyright::copyright());
+		printf("%s\n\n", LibToDll::Copyright::copyright().c_str());
 		printf("%s\n",
 		       "usage:\n"
 		       "    lib-to-dll in.lib [extra obj/lib]\n\n"
@@ -30,7 +30,7 @@ namespace XYO::LibToDll {
 	};
 
 	void Application::showLicense() {
-		printf("%s", LibToDll::License::license());
+		printf("%s", LibToDll::License::license().c_str());
 	};
 
 	void Application::showVersion() {
