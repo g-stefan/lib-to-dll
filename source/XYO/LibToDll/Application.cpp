@@ -18,7 +18,7 @@ namespace XYO::LibToDll {
 	void Application::showUsage() {
 		printf("lib-to-dll - Convert lib to dll\n");
 		printf("version %s build %s [%s]\n", LibToDll::Version::version(), LibToDll::Version::build(), LibToDll::Version::datetime());
-		printf("%s\n\n", LibToDll::Copyright::copyright().c_str());
+		printf("%s\n\n", LibToDll::Copyright::copyright());
 		printf("%s\n",
 		       "usage:\n"
 		       "    lib-to-dll in.lib [extra obj/lib]\n\n"
@@ -44,7 +44,7 @@ namespace XYO::LibToDll {
 	};
 
 	String Application::strStrip(String str) {
-		return String::trimWithElement(str, "\r\n\t ");
+		return StringX::trimWithElement(str, "\r\n\t ");
 	};
 
 	int Application::cmdSystem(char *cmd) {
@@ -116,8 +116,8 @@ namespace XYO::LibToDll {
 		if (mainLib) {
 			size_t last;
 			mainLibX = (char *)mainLib;
-			if (String::indexOfFromEnd(mainLibX, ".", 0, last)) {
-				mainLibX = String::substring(mainLibX, 0, last);
+			if (StringX::indexOfFromEnd(mainLibX, ".", 0, last)) {
+				mainLibX = StringX::substring(mainLibX, 0, last);
 				mainLib = (char *)mainLibX.value();
 			};
 		} else {
@@ -159,11 +159,11 @@ namespace XYO::LibToDll {
 		for (objFile = objList.head; objFile; objFile = objFile->next) {
 			objAs = objFile->value;
 			objX = objFile->value;
-			objAs = String::replace(objAs, ".\\", "");
-			objAs = String::replace(objAs, "_", "__");
-			objAs = String::replace(objAs, "\\", "_");
-			objAs = String::replace(objAs, "/", "_");
-			objAs = String::replace(objAs, ":", "_");
+			objAs = StringX::replace(objAs, ".\\", "");
+			objAs = StringX::replace(objAs, "_", "__");
+			objAs = StringX::replace(objAs, "\\", "_");
+			objAs = StringX::replace(objAs, "/", "_");
+			objAs = StringX::replace(objAs, ":", "_");
 			if (coffMode) {
 				sprintf(buf, "lib /nologo /MACHINE:X64 /extract:%s /out:%s.obj\\%s %s.static.lib", objX.value(), mainLib, objAs.value(), mainLib);
 			} else {
@@ -198,11 +198,11 @@ namespace XYO::LibToDll {
 			};
 			for (objFile = objList.head; objFile; objFile = objFile->next) {
 				objAs = objFile->value;
-				objAs = String::replace(objAs, ".\\", "");
-				objAs = String::replace(objAs, "_", "__");
-				objAs = String::replace(objAs, "\\", "_");
-				objAs = String::replace(objAs, "/", "_");
-				objAs = String::replace(objAs, ":", "_");
+				objAs = StringX::replace(objAs, ".\\", "");
+				objAs = StringX::replace(objAs, "_", "__");
+				objAs = StringX::replace(objAs, "\\", "_");
+				objAs = StringX::replace(objAs, "/", "_");
+				objAs = StringX::replace(objAs, ":", "_");
 				line += mainLib;
 				line += ".obj\\";
 				line += objAs;
@@ -239,11 +239,11 @@ namespace XYO::LibToDll {
 
 		for (objFile = objList.head; objFile; objFile = objFile->next) {
 			objAs = objFile->value;
-			objAs = String::replace(objAs, ".\\", "");
-			objAs = String::replace(objAs, "_", "__");
-			objAs = String::replace(objAs, "\\", "_");
-			objAs = String::replace(objAs, "/", "_");
-			objAs = String::replace(objAs, ":", "_");
+			objAs = StringX::replace(objAs, ".\\", "");
+			objAs = StringX::replace(objAs, "_", "__");
+			objAs = StringX::replace(objAs, "\\", "_");
+			objAs = StringX::replace(objAs, "/", "_");
+			objAs = StringX::replace(objAs, ":", "_");
 			line << mainLib;
 			line << ".obj\\";
 			line << objAs;
