@@ -117,7 +117,7 @@ namespace XYO::LibToDll {
 			size_t last;
 			mainLibX = (char *)mainLib;
 			if (mainLibX.indexOfFromEnd(".", 0, last)) {
-				mainLibX = mainLibX.substring( 0, last);
+				mainLibX = mainLibX.substring(0, last);
 				mainLib = (char *)mainLibX.value();
 			};
 		} else {
