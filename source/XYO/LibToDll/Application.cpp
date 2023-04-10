@@ -44,7 +44,7 @@ namespace XYO::LibToDll {
 	};
 
 	String Application::strStrip(String str) {
-		return StringX::trimWithElement(str, "\r\n\t ");
+		return str.trimWithElement("\r\n\t ");
 	};
 
 	int Application::cmdSystem(char *cmd) {
@@ -116,8 +116,8 @@ namespace XYO::LibToDll {
 		if (mainLib) {
 			size_t last;
 			mainLibX = (char *)mainLib;
-			if (StringX::indexOfFromEnd(mainLibX, ".", 0, last)) {
-				mainLibX = StringX::substring(mainLibX, 0, last);
+			if (mainLibX.indexOfFromEnd(".", 0, last)) {
+				mainLibX = mainLibX.substring( 0, last);
 				mainLib = (char *)mainLibX.value();
 			};
 		} else {
@@ -159,11 +159,11 @@ namespace XYO::LibToDll {
 		for (objFile = objList.head; objFile; objFile = objFile->next) {
 			objAs = objFile->value;
 			objX = objFile->value;
-			objAs = StringX::replace(objAs, ".\\", "");
-			objAs = StringX::replace(objAs, "_", "__");
-			objAs = StringX::replace(objAs, "\\", "_");
-			objAs = StringX::replace(objAs, "/", "_");
-			objAs = StringX::replace(objAs, ":", "_");
+			objAs = objAs.replace(".\\", "");
+			objAs = objAs.replace("_", "__");
+			objAs = objAs.replace("\\", "_");
+			objAs = objAs.replace("/", "_");
+			objAs = objAs.replace(":", "_");
 			if (coffMode) {
 				sprintf(buf, "lib /nologo /MACHINE:X64 /extract:%s /out:%s.obj\\%s %s.static.lib", objX.value(), mainLib, objAs.value(), mainLib);
 			} else {
@@ -198,11 +198,11 @@ namespace XYO::LibToDll {
 			};
 			for (objFile = objList.head; objFile; objFile = objFile->next) {
 				objAs = objFile->value;
-				objAs = StringX::replace(objAs, ".\\", "");
-				objAs = StringX::replace(objAs, "_", "__");
-				objAs = StringX::replace(objAs, "\\", "_");
-				objAs = StringX::replace(objAs, "/", "_");
-				objAs = StringX::replace(objAs, ":", "_");
+				objAs = objAs.replace(".\\", "");
+				objAs = objAs.replace("_", "__");
+				objAs = objAs.replace("\\", "_");
+				objAs = objAs.replace("/", "_");
+				objAs = objAs.replace(":", "_");
 				line += mainLib;
 				line += ".obj\\";
 				line += objAs;
@@ -239,11 +239,11 @@ namespace XYO::LibToDll {
 
 		for (objFile = objList.head; objFile; objFile = objFile->next) {
 			objAs = objFile->value;
-			objAs = StringX::replace(objAs, ".\\", "");
-			objAs = StringX::replace(objAs, "_", "__");
-			objAs = StringX::replace(objAs, "\\", "_");
-			objAs = StringX::replace(objAs, "/", "_");
-			objAs = StringX::replace(objAs, ":", "_");
+			objAs = objAs.replace(".\\", "");
+			objAs = objAs.replace("_", "__");
+			objAs = objAs.replace("\\", "_");
+			objAs = objAs.replace("/", "_");
+			objAs = objAs.replace(":", "_");
 			line << mainLib;
 			line << ".obj\\";
 			line << objAs;
