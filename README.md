@@ -4,5 +4,5 @@ Convert lib to dll
 
 ## License
 
-Copyright (c) 2014-2023 Grigore Stefan
+Copyright (c) 2014-2024 Grigore Stefan
 Licensed under the [MIT](LICENSE) license.
