@@ -5,7 +5,7 @@
 		"projects": [
 			{
 				"name":"lib-to-dll",
-				"make" : "exe.static",
+				"make" : "exe",
 				"SPDX-License-Identifier": "MIT",
 				"sourcePath" : "XYO/LibToDll",
 				"dependency" : [
