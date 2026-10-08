@@ -1,5 +1,6 @@
 {
 	"solution": {
+		"namespace" : "xyo",
 		"name" : "lib-to-dll",
 		"type" : "xyo-cpp",
 		"projects": [

@@ -21,12 +21,15 @@ namespace XYO::LibToDll {
 		printf("%s\n\n", LibToDll::Copyright::copyright());
 		printf("%s\n",
 		       "usage:\n"
-		       "    lib-to-dll in.lib [extra obj/lib]\n\n"
+		       "    lib-to-dll [options] in.lib [extra obj/lib ...]\n\n"
 		       "options:\n"
-		       "    --mode type     {WIN32|WIN64}\n"
+		       "    --mode type     {WIN32|WIN64} default is the target of the\n"
+		       "                    Visual C++ environment, else WIN32\n"
+		       "    --use-coff-def  use symbols from obj not from def file\n"
+		       "    --static-crt    use static crt [MT] default is dynamic crt [MD]\n"
 		       "    --license       show license\n"
-		       "    --use-coff-def  use symbols form obj not from def file\n"
-		       "    --static-crt    use static crt [MT] default is dynamic crt [MD]\n");
+		       "    --version       show version\n"
+		       "    --help          show this help\n");
 	};
 
 	void Application::showLicense() {
@@ -47,240 +50,363 @@ namespace XYO::LibToDll {
 		return str.trimWithElement("\r\n\t ");
 	};
 
-	int Application::cmdSystem(char *cmd) {
-		printf("%s\n", cmd);
-		return system(cmd);
+	// File names with spaces as one argument of lib, link and xyo-coff-to-def
+	String Application::quote(const String &value) {
+		if (value.itContains(" ") || value.itContains("\t")) {
+			String retV = "\"";
+			retV << value;
+			retV << "\"";
+			return retV;
+		};
+		return value;
+	};
+
+	// Shell::execute returns 127 when the process can not be started
+	void Application::showCommandError(uint32_t exitCode) {
+		if (exitCode == 127) {
+			printf("Error: unable to run the command, lib, link and xyo-coff-to-def must be on the PATH (Visual C++ environment)\n");
+			return;
+		};
+		printf("Error: command failed, exit code %u\n", exitCode);
+	};
+
+	// Run without cmd.exe: no quoting rules of the shell, command line up to 32767 characters
+	bool Application::execute(const String &cmd) {
+		printf("%s\n", cmd.value());
+		fflush(stdout);
+		uint32_t exitCode = Shell::execute(cmd);
+		if (exitCode != 0) {
+			showCommandError(exitCode);
+			return false;
+		};
+		return true;
+	};
+
+	// The target of the Visual C++ environment, set by vcvarsall.bat
+	bool Application::isDefaultModeWin64() {
+		return Shell::getEnv("VSCMD_ARG_TGT_ARCH").toLowerCaseASCII() == "x64";
+	};
+
+	// Member names of a library, lib /list
+	bool Application::listMembers(const String &library, const String &listFile, TDynamicArray<String> &memberList) {
+		String cmd;
+		String content;
+		TDynamicArray<String> lineList;
+		size_t k;
+
+		memberList.empty();
+
+		cmd = "lib /nologo /list ";
+		cmd << quote(library);
+		printf("%s\n", cmd.value());
+		fflush(stdout);
+		uint32_t exitCode = Shell::executeWriteOutputToFile(cmd, listFile);
+		if (!Shell::fileGetContents(listFile, content)) {
+			content = "";
+		};
+		if (exitCode != 0) {
+			if (!content.isEmpty()) {
+				printf("%s\n", content.value());
+			};
+			showCommandError(exitCode);
+			printf("Error: unable to list the members of %s\n", library.value());
+			return false;
+		};
+
+		content.explode("\n", lineList);
+		for (k = 0; k < lineList.length(); ++k) {
+			String line = strStrip(lineList[k]);
+			if (line.length() == 0) {
+				continue;
+			};
+			memberList.push(line);
+		};
+		return true;
+	};
+
+	// Every member of an import library is named after the dll (or exe) it imports from
+	bool Application::isImportLibrary(TDynamicArray<String> &memberList) {
+		size_t k;
+		if (memberList.length() == 0) {
+			return false;
+		};
+		for (k = 0; k < memberList.length(); ++k) {
+			String member = memberList[k].toLowerCaseASCII();
+			if (!(member.endsWith(".dll") || member.endsWith(".exe"))) {
+				return false;
+			};
+		};
+		return true;
+	};
+
+	// File name of an extracted member, its folders become part of the name:
+	// "_" is doubled first, so two different member names do not give the same file name
+	String Application::memberFileName(const String &member) {
+		String retV = member;
+		retV = retV.replace(".\\", "");
+		retV = retV.replace("_", "__");
+		retV = retV.replace("\\", "_");
+		retV = retV.replace("/", "_");
+		retV = retV.replace(":", "_");
+		return retV;
 	};
 
 	int Application::main(int cmdN, char *cmdS[]) {
 		int i;
-		FILE *in;
-		int found;
-		char ch;
+		size_t k;
+		size_t m;
 		char *opt;
-		char buf[1024];
 
-		char *mainLib;
+		String mainLib;
 		TDoubleEndedQueue<String> libList;
+		TDoubleEndedQueue<String>::Node *libFile;
+		TDynamicArray<String> memberList;
+		TDynamicArray<String> objList;
 		String line;
-		TDoubleEndedQueue<String> objList;
-		TDoubleEndedQueue<String>::Node *objFile;
-		String objAs;
-		String objX;
-		int hasDef;
-		String mainLibX;
-		int coffMode;
-		int useCoffDef;
-		int useStaticCrt;
+		bool hasDef;
+		bool isWin64;
+		bool useCoffDef;
+		bool useStaticCrt;
+		bool isInfo;
 
 		if (cmdN < 2) {
 			showUsage();
 			return 0;
 		};
 
-		useStaticCrt = 0;
-		useCoffDef = 0;
-		coffMode = 0;
-		mainLib = NULL;
-		libList.empty();
+		useStaticCrt = false;
+		useCoffDef = false;
+		isWin64 = isDefaultModeWin64();
+		isInfo = false;
 		for (i = 1; i < cmdN; ++i) {
 			if (strncmp(cmdS[i], "--", 2) == 0) {
 				opt = &cmdS[i][2];
+				if (strcmp(opt, "help") == 0 || strcmp(opt, "usage") == 0) {
+					showUsage();
+					return 0;
+				};
 				if (strcmp(opt, "license") == 0) {
 					showLicense();
-				} else if (strcmp(opt, "use-coff-def") == 0) {
-					useCoffDef = 1;
-				} else if (strcmp(opt, "static-crt") == 0) {
-					useStaticCrt = 1;
-				} else if (strcmp(opt, "mode") == 0) {
-					if (i + 1 < cmdN) {
-						if (strcmp(cmdS[i + 1], "WIN32") == 0) {
-							coffMode = 0;
-						};
-						if (strcmp(cmdS[i + 1], "WIN64") == 0) {
-							coffMode = 1;
-						};
-						++i;
+					isInfo = true;
+					continue;
+				};
+				if (strcmp(opt, "version") == 0) {
+					showVersion();
+					isInfo = true;
+					continue;
+				};
+				if (strcmp(opt, "use-coff-def") == 0) {
+					useCoffDef = true;
+					continue;
+				};
+				if (strcmp(opt, "static-crt") == 0) {
+					useStaticCrt = true;
+					continue;
+				};
+				if (strcmp(opt, "mode") == 0) {
+					if (i + 1 >= cmdN) {
+						printf("Error: --mode needs a value, WIN32 or WIN64\n");
+						return 1;
 					};
-					continue;
+					++i;
+					String mode = String(cmdS[i]).toUpperCaseASCII();
+					if (mode == "WIN32") {
+						isWin64 = false;
+						continue;
+					};
+					if (mode == "WIN64") {
+						isWin64 = true;
+						continue;
+					};
+					printf("Error: unknown mode %s, use WIN32 or WIN64\n", cmdS[i]);
+					return 1;
 				};
-			} else {
-				if (mainLib) {
-					libList.pushToTail(cmdS[i]);
-				} else {
-					mainLib = cmdS[i];
-				};
-			};
-		};
-
-		if (mainLib) {
-			size_t last;
-			mainLibX = (char *)mainLib;
-			if (mainLibX.indexOfFromEnd(".", 0, last)) {
-				mainLibX = mainLibX.substring(0, last);
-				mainLib = (char *)mainLibX.value();
-			};
-		} else {
-			printf("No library specified.\n");
-			return 0;
-		};
-
-		sprintf(buf, "if not exist %s.static.lib move /Y %s.lib %s.static.lib", mainLib, mainLib, mainLib);
-		if (cmdSystem(buf)) {
-			return 1;
-		}
-		sprintf(buf, "lib /nologo /list %s.static.lib >%s.lst", mainLib, mainLib);
-		if (cmdSystem(buf)) {
-			return 1;
-		}
-
-		objList.empty();
-		sprintf(buf, "%s.lst", mainLib);
-		in = fopen(buf, "rt");
-		if (in != NULL) {
-			while (fgets(buf, 1024, in)) {
-				line = strStrip((char *)&buf[0]);
-				if (line.length() == 0) {
-					continue;
-				};
-				objList.pushToTail(line);
-			};
-			fclose(in);
-		};
-
-		sprintf(buf, "if exist %s.obj\\NUL rmdir /S /Q %s.obj", mainLib, mainLib);
-		if (cmdSystem(buf)) {
-			return 1;
-		}
-		sprintf(buf, "if not exist %s.obj\\NUL mkdir %s.obj", mainLib, mainLib);
-		if (cmdSystem(buf)) {
-			return 1;
-		}
-		for (objFile = objList.head; objFile; objFile = objFile->next) {
-			objAs = objFile->value;
-			objX = objFile->value;
-			objAs = objAs.replace(".\\", "");
-			objAs = objAs.replace("_", "__");
-			objAs = objAs.replace("\\", "_");
-			objAs = objAs.replace("/", "_");
-			objAs = objAs.replace(":", "_");
-			if (coffMode) {
-				sprintf(buf, "lib /nologo /MACHINE:X64 /extract:%s /out:%s.obj\\%s %s.static.lib", objX.value(), mainLib, objAs.value(), mainLib);
-			} else {
-				sprintf(buf, "lib /nologo /MACHINE:X86 /extract:%s /out:%s.obj\\%s %s.static.lib", objX.value(), mainLib, objAs.value(), mainLib);
-			};
-			if (cmdSystem(buf)) {
+				printf("Error: unknown option %s\n", cmdS[i]);
 				return 1;
-			}
+			};
+			if (mainLib.isEmpty()) {
+				mainLib = cmdS[i];
+				continue;
+			};
+			libList.pushToTail(cmdS[i]);
 		};
 
-		hasDef = 0;
-		if (useCoffDef) {
-		} else {
-			sprintf(buf, "%s.def", mainLib);
-			in = fopen(buf, "rt");
-			if (in) {
-				fclose(in);
-				hasDef = 1;
+		if (mainLib.isEmpty()) {
+			if (isInfo) {
+				return 0;
+			};
+			printf("Error: no library specified\n");
+			return 1;
+		};
+
+		// in.lib or in, only .lib is removed (in.v1 is a name, not in + extension)
+		if (mainLib.toLowerCaseASCII().endsWith(".lib")) {
+			mainLib = mainLib.substring(0, mainLib.length() - 4);
+		};
+
+		String libraryFile = mainLib + ".lib";
+		String staticLibraryFile = mainLib + ".static.lib";
+		String listFile = mainLib + ".lst";
+		String objectPath = mainLib + ".obj";
+		String defFile = mainLib + ".def";
+		String dllDefFile = mainLib + ".dll.def";
+		String expFile = mainLib + ".exp";
+		String linkFile = mainLib + ".rsp";
+		String dllFile = mainLib + ".dll";
+
+		// The static library is kept as in.static.lib, in.lib becomes the import library of in.dll.
+		// in.lib is the import library when converted before: use in.static.lib.
+		// in.lib is a static library (new or rebuilt): it replaces in.static.lib.
+		if (Shell::fileExists(libraryFile)) {
+			if (!listMembers(libraryFile, listFile, memberList)) {
+				Shell::removeFile(listFile);
+				return 1;
+			};
+			if (isImportLibrary(memberList)) {
+				if (!Shell::fileExists(staticLibraryFile)) {
+					Shell::removeFile(listFile);
+					printf("Error: %s is an import library and %s not found\n", libraryFile.value(), staticLibraryFile.value());
+					return 1;
+				};
 			} else {
-				useCoffDef = 1;
+				if (Shell::fileExists(staticLibraryFile)) {
+					printf("remove %s\n", staticLibraryFile.value());
+					if (!Shell::removeFile(staticLibraryFile)) {
+						Shell::removeFile(listFile);
+						printf("Error: unable to remove %s\n", staticLibraryFile.value());
+						return 1;
+					};
+				};
+				printf("move %s %s\n", libraryFile.value(), staticLibraryFile.value());
+				if (!Shell::rename(libraryFile, staticLibraryFile)) {
+					Shell::removeFile(listFile);
+					printf("Error: unable to move %s to %s\n", libraryFile.value(), staticLibraryFile.value());
+					return 1;
+				};
+			};
+		} else if (!Shell::fileExists(staticLibraryFile)) {
+			printf("Error: %s not found\n", libraryFile.value());
+			return 1;
+		};
+
+		hasDef = false;
+		if (!useCoffDef) {
+			if (Shell::fileExists(defFile)) {
+				hasDef = true;
+			} else {
+				useCoffDef = true;
+			};
+		};
+
+		// Temporary files, removed on success and on error
+		auto cleanup = [&]() {
+			Shell::removeDirRecursively(objectPath);
+			Shell::removeFile(listFile);
+			Shell::removeFile(expFile);
+			Shell::removeFile(linkFile);
+			if (!hasDef) {
+				Shell::removeFile(dllDefFile);
+			};
+		};
+
+		if (!listMembers(staticLibraryFile, listFile, memberList)) {
+			cleanup();
+			return 1;
+		};
+
+		// lib /extract takes the first member with a name, the others with the same name can not be extracted
+		for (k = 0; k < memberList.length(); ++k) {
+			for (m = 0; m < objList.length(); ++m) {
+				if (objList[m] == memberList[k]) {
+					break;
+				};
+			};
+			if (m < objList.length()) {
+				printf("Warning: %s has more than one member named %s, only the first one is used\n", staticLibraryFile.value(), memberList[k].value());
+				continue;
+			};
+			objList.push(memberList[k]);
+		};
+
+		if (objList.length() == 0) {
+			cleanup();
+			printf("Error: %s has no members\n", staticLibraryFile.value());
+			return 1;
+		};
+
+		if (Shell::directoryExists(objectPath)) {
+			if (!Shell::removeDirRecursively(objectPath)) {
+				cleanup();
+				printf("Error: unable to remove %s\n", objectPath.value());
+				return 1;
+			};
+		};
+		if (!Shell::mkdirRecursivelyIfNotExists(objectPath)) {
+			cleanup();
+			printf("Error: unable to create %s\n", objectPath.value());
+			return 1;
+		};
+
+		for (k = 0; k < objList.length(); ++k) {
+			line = "lib /nologo ";
+			line << (isWin64 ? "/MACHINE:X64" : "/MACHINE:X86");
+			line << " " << quote(String("/extract:") + objList[k]);
+			line << " " << quote(String("/out:") + objectPath + "\\" + memberFileName(objList[k]));
+			line << " " << quote(staticLibraryFile);
+			if (!execute(line)) {
+				cleanup();
+				return 1;
 			};
 		};
 
 		if (useCoffDef) {
-
 			line = "xyo-coff-to-def --out ";
-			line << (char *)mainLib;
-			if (coffMode) {
-				line << ".dll.def --mode WIN64 ";
-			} else {
-				line << ".dll.def --mode WIN32 ";
+			line << quote(dllDefFile);
+			line << (isWin64 ? " --mode WIN64" : " --mode WIN32");
+			for (k = 0; k < objList.length(); ++k) {
+				line << " " << quote(objectPath + "\\" + memberFileName(objList[k]));
 			};
-			for (objFile = objList.head; objFile; objFile = objFile->next) {
-				objAs = objFile->value;
-				objAs = objAs.replace(".\\", "");
-				objAs = objAs.replace("_", "__");
-				objAs = objAs.replace("\\", "_");
-				objAs = objAs.replace("/", "_");
-				objAs = objAs.replace(":", "_");
-				line += mainLib;
-				line += ".obj\\";
-				line += objAs;
-				line += " ";
-			};
-			if (cmdSystem((char *)line.value())) {
+			if (!execute(line)) {
+				cleanup();
 				return 1;
-			}
+			};
 		};
 
-		line = "link /NOLOGO /OUT:";
-		line << mainLib;
-		line << ".dll ";
-		if (coffMode) {
-			line << "/MACHINE:X64 ";
-		} else {
-			line << "/MACHINE:X86 ";
-		};
+		// Options and objects in a response file, no limit on the number of objects
+		line = "/NOLOGO ";
+		line << quote(String("/OUT:") + dllFile);
+		line << (isWin64 ? " /MACHINE:X64" : " /MACHINE:X86");
 		if (useStaticCrt) {
-			line << "/nodefaultlib:msvcrt /defaultlib:libcmt ";
+			line << " /nodefaultlib:msvcrt /defaultlib:libcmt";
 		} else {
-			line << "/nodefaultlib:libcmt /defaultlib:msvcrt ";
+			line << " /nodefaultlib:libcmt /defaultlib:msvcrt";
 		};
-
-		line << "/dll /INCREMENTAL:NO /DEF:";
-		line << mainLib;
-		if (hasDef) {
-			line << ".def /implib:";
-		} else {
-			line << ".dll.def /implib:";
+		line << " /dll /INCREMENTAL:NO ";
+		line << quote(String("/DEF:") + (hasDef ? defFile : dllDefFile));
+		line << " " << quote(String("/implib:") + libraryFile);
+		line << "\n";
+		for (k = 0; k < objList.length(); ++k) {
+			line << quote(objectPath + "\\" + memberFileName(objList[k]));
+			line << "\n";
 		};
-		line << mainLib;
-		line << ".lib ";
-
-		for (objFile = objList.head; objFile; objFile = objFile->next) {
-			objAs = objFile->value;
-			objAs = objAs.replace(".\\", "");
-			objAs = objAs.replace("_", "__");
-			objAs = objAs.replace("\\", "_");
-			objAs = objAs.replace("/", "_");
-			objAs = objAs.replace(":", "_");
-			line << mainLib;
-			line << ".obj\\";
-			line << objAs;
-			line << " ";
+		for (libFile = libList.head; libFile; libFile = libFile->next) {
+			line << quote(libFile->value);
+			line << "\n";
 		};
-
-		for (objFile = libList.head; objFile; objFile = objFile->next) {
-			objAs = objFile->value;
-			line << objAs;
-			line << " ";
-		};
-
-		if (cmdSystem((char *)line.value())) {
+		if (!Shell::filePutContents(linkFile, line)) {
+			cleanup();
+			printf("Error: unable to write %s\n", linkFile.value());
 			return 1;
-		}
-
-		sprintf(buf, "if exist %s.obj\\NUL rmdir /S /Q %s.obj", mainLib, mainLib);
-		if (cmdSystem(buf)) {
+		};
+		printf("%s", line.value());
+		if (!execute(String("link @") + quote(linkFile))) {
+			cleanup();
 			return 1;
-		}
-		sprintf(buf, "if exist %s.lst del /F /Q %s.lst", mainLib, mainLib);
-		if (cmdSystem(buf)) {
-			return 1;
-		}
-		sprintf(buf, "if exist %s.exp del /F /Q %s.exp", mainLib, mainLib);
-		if (cmdSystem(buf)) {
-			return 1;
-		}
-		if (hasDef) {
-		} else {
-			sprintf(buf, "if exist %s.dll.def del /F /Q %s.dll.def", mainLib, mainLib);
-			if (cmdSystem(buf)) {
-				return 1;
-			}
 		};
 
-		printf("Build %s.dll ok\n", mainLib);
+		cleanup();
+
+		printf("Build %s ok\n", dllFile.value());
 		return 0;
 	};
 };

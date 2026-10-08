@@ -28,7 +28,13 @@ namespace XYO::LibToDll {
 			static void initMemory();
 
 			String strStrip(String str);
-			int cmdSystem(char *cmd);
+			String quote(const String &value);
+			void showCommandError(uint32_t exitCode);
+			bool execute(const String &cmd);
+			bool isDefaultModeWin64();
+			bool listMembers(const String &library, const String &listFile, TDynamicArray<String> &memberList);
+			bool isImportLibrary(TDynamicArray<String> &memberList);
+			String memberFileName(const String &member);
 	};
 
 };
